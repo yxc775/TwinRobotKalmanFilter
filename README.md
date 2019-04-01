@@ -13,6 +13,7 @@ open temrinal and write:
 **cmake ..**
 
 **make**
+
 to compile the file
 
 After this step, move all dylib file from build file to replace all dylib file in parent folder.
