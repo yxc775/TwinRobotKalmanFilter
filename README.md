@@ -6,20 +6,26 @@ two robots using specialized Kalman Filter with Beacon support
 Install supported C++ lib and Gazebo library.
 open temrinal and write:
 
-*mkdir build*
+**mkdir build**
 
-*cd build*
+**cd build**
 
-*cmake ..*
+**cmake ..**
 
-*make*
+**make**
 to compile the file
 
+After this step, move all dylib file from build file to replace all dylib file in parent folder.
+open a new terminal and write
 
+**gzserver -u projectWorld.world --verbose**
 
+Then, open another terminal and write 
 
+**gzclient**
 
-After this step, 
+which should allow you to run the simulation
+
 
 
 
