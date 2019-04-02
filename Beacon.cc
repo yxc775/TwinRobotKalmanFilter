@@ -8,18 +8,20 @@
 #include <random>
 #include <cmath>
 #include <utility>
+#include <math.h> 
 
 const int BeaconTag = 0;
-const int Robot1Tag = 0;
-const int Robot2Tag = 0;
-const double BeaconNoise = 0.00005;
-const double robot1Noise = 0.0005;
-const double robot2Noise = 0.0005;
-const double BeaconProcessnoise = 0.00005;
-const double robot1processNoise = 0.0005;
-const double robot2processNoise = 0.0005;
-const double C1 = 0.60;
-const double C2 = 0.60;
+const int Robot1Tag = 1;
+const int Robot2Tag = 2;
+const double BeaconNoise = 0.00000005;
+const double robot1Noise = 0.00005;
+const double robot2Noise = 0.05;
+const double BeaconProcessnoise =0.00000005;
+const double robot1processNoise = 0.00005;
+const double robot2processNoise = 0.05;
+const double C1 = 0;
+const double C2 = 1;
+
 
 
 namespace gazebo
@@ -88,11 +90,14 @@ namespace gazebo
       kalmanFilter(this -> iterBec,this -> iterPBec,MB,BeaconProcessnoise,BeaconTag);
 
       //Apply technique here, newX1 =  (1-c)x1' + c(beacon + x1'), newX2 =  (1-c)x2' + c(beacon + x2')
-      this -> iterX1[0] = (1-C1)*(this -> iterX1[0]) + C1*((this -> iterX2[0]) + diff.X());
-      this -> iterX1[1] = (1-C1)*(this -> iterX1[1]) + C1*((this -> iterX2[1]) + diff.Y());
+      double tempx1 = (this -> iterX1[0]);
+      double tempy1 = (this -> iterX1[1]);
 
-      this -> iterX2[0] = (1-C2)*(this -> iterX2[0]) + C2*((this -> iterX1[0]) - diff.X());
-      this -> iterX2[1] = (1-C2)*(this -> iterX2[1]) + C2*((this -> iterX1[1]) - diff.Y());
+      this -> iterX1[0] = (1-C1)*(this -> iterX1[0]) + C1*((this -> iterX2[0]) + iterBec[0]);
+      this -> iterX1[1] = (1-C1)*(this -> iterX1[1]) + C1*((this -> iterX2[1]) + iterBec[1]);
+
+      this -> iterX2[0] = (1-C2)*(this -> iterX2[0]) + C2*(tempx1 - iterBec[0]);
+      this -> iterX2[1] = (1-C2)*(this -> iterX2[1]) + C2*(tempy1 - iterBec[1]);
       this -> count = this -> count + 1;
 
       if(this -> count >= 1000){
@@ -103,26 +108,20 @@ namespace gazebo
         printf("%s: %f %f\n","iterx1 R1",iterX1[0],iterX1[1]);
         printf("%s: %f %f\n","iterx2 R2",iterX2[0],iterX2[1]);
         printf("%s: %f %f\n","iterBeacon RB",iterBec[0],iterBec[1]);
-        double sR1x = 0;
-        double sR1y = 0;
-        double sR2x = 0;
-        double sR2y = 0;
+        double sR1 = 0;
+        double sR2 = 0;
         for(int i = 0; i < 1000; i = i + 1){
-          sR1x = sR1x + this -> sumErrorR1[0][i];
-          sR1y = sR1y + this -> sumErrorR1[1][i];
-          sR2x = sR2x + this -> sumErrorR2[0][i];
-          sR2y = sR2y + this -> sumErrorR2[1][i];
+          sR1 = sR1 + this -> sumErrorR1[i];
+          sR2 = sR2 + this -> sumErrorR2[i];
         }
-        printf("%s: %f %f\n","error rate Robot 1", sR1x/1000, sR1y/1000);
-        printf("%s: %f %f\n\n","error rate Robot 2", sR2x/1000, sR2y/1000);                
+        printf("%s: %f\n","error rate Robot 1", sR1/1000);
+        printf("%s: %f\n\n","error rate Robot 2", sR2/1000);                
         this -> count = 0;
         this -> iteration = iteration + 1;
       }
       else{
-        this -> sumErrorR1[0][count] = std::abs((iterX1[0] - pose1.Pos().X())/pose1.Pos().X());
-        this -> sumErrorR1[1][count] = std::abs((iterX1[1] - pose1.Pos().Y())/pose1.Pos().Y());
-        this -> sumErrorR2[0][count] = std::abs((iterX2[0] - pose2.Pos().X())/pose2.Pos().X());
-        this -> sumErrorR2[1][count] = std::abs((iterX2[1] - pose2.Pos().Y())/pose2.Pos().Y());
+        this -> sumErrorR1[count] = std::abs((sqrt(pow(iterX1[0],2) + pow(iterX1[1],2)) - sqrt(pow(pose1.Pos().X(),2) + pow(pose1.Pos().Y(),2)))/sqrt(pow(pose1.Pos().X(),2) + pow(pose1.Pos().Y(),2)));
+        this -> sumErrorR2[count] = std::abs((sqrt(pow(iterX2[0],2) + pow(iterX2[1],2)) - sqrt(pow(pose2.Pos().X(),2) + pow(pose2.Pos().Y(),2)))/sqrt(pow(pose2.Pos().X(),2) + pow(pose2.Pos().Y(),2)));
       }
     }
 
@@ -369,8 +368,8 @@ namespace gazebo
     private: double iterPBec[4][4] = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
     private: int count = 0;
     private: int iteration = 0;
-    private: double sumErrorR1[2][1000];
-    private: double sumErrorR2[2][1000];
+    private: double sumErrorR1[1000];
+    private: double sumErrorR2[1000];
 
 
     // Pointer to the update event connection
